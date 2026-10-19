@@ -274,26 +274,26 @@ function renderHtml(now: number, d: any, a: any, notes: string[]) {
   out.push(`<p style="${S.meta}">Arizona Corporation Commission · ${esc(fmtLongDay(now))} · Activity since ${esc(fmtShort(cutoff))} ${esc(fmtTime(cutoff))} · Calendar through ${esc(fmtShort(now + 7 * DAY))}</p>`);
 
   if ((a.atAGlance || []).length) {
-    out.push(`<p style="${S.h2}">At a glance</p>`);
-    for (const g of a.atAGlance) out.push(`<p style="${S.glance}">${esc(g)}</p>`);
+    out.push(`<p class="acc-h2" style="${S.h2}">At a glance</p>`);
+    for (const g of a.atAGlance) out.push(`<p class="acc-glance" style="${S.glance}">${esc(g)}</p>`);
   }
 
   // Events
-  out.push(`<p style="${S.h2}">Events &amp; hearings — next 7 days</p>`);
+  out.push(`<p class="acc-h2" style="${S.h2}">Events &amp; hearings — next 7 days</p>`);
   if (!d.events.length) out.push(`<p style="${S.empty}">${d.eventsError ? "The ACC calendar could not be reached this morning." : "No events scheduled."} ${link(SOURCES.calendar, "Open the ACC calendar")}</p>`);
   let day = "";
   for (const e of d.events) {
     const dh = fmtDayHeading(e.start);
-    if (dh !== day) { day = dh; out.push(`<p style="${S.h3}">${esc(dh)}</p>`); }
+    if (dh !== day) { day = dh; out.push(`<p class="acc-h3" style="${S.h3}">${esc(dh)}</p>`); }
     const dockets = e.dockets.map((x: any) => link(x.url, x.number)).join(", ");
     const summary = evSum.get(Number(e.eventId));
-    out.push(`<div style="${S.item}"><strong>${esc(fmtTime(e.start))} — ${esc(e.type)}</strong>${e.companies.length ? `: ${esc(e.companies.join(", "))}` : ""}`
+    out.push(`<div class="acc-item" style="${S.item}"><strong>${esc(fmtTime(e.start))} — ${esc(e.type)}</strong>${e.companies.length ? `: ${esc(e.companies.join(", "))}` : ""}`
       + (summary ? `<br>${esc(summary)}` : e.subject ? `<br>${esc(e.subject)}` : "")
       + `<p style="${S.small}">${[e.location && esc(e.location), dockets && `Docket ${dockets}`, e.dialIn && `Dial-in: ${esc(e.dialIn)}`].filter(Boolean).join(" · ")}</p></div>`);
   }
 
   // Dockets
-  out.push(`<p style="${S.h2}">Docket activity — last 48 hours</p>`);
+  out.push(`<p class="acc-h2" style="${S.h2}">Docket activity — last 48 hours</p>`);
   if (!d.dockets.length) out.push(`<p style="${S.empty}">${d.docketsError ? "eDocket could not be reached this morning." : "No docket activity in the last 48 hours."} ${link(SOURCES.recentDockets, "Open eDocket")}</p>`);
   const featured = d.dockets.filter((x: any) => dkSum.has(Number(x.docketId)));
   const rest = d.dockets.filter((x: any) => !dkSum.has(Number(x.docketId)));
@@ -305,38 +305,38 @@ function renderHtml(now: number, d: any, a: any, notes: string[]) {
     return `<p style="${S.small}">${items.join("<br>")}${more}</p>`;
   };
   for (const x of featured) {
-    out.push(`<div style="${S.item}"><strong>${link(x.url, x.docketNumber)} — ${esc(x.company)}</strong>`
+    out.push(`<div class="acc-item" style="${S.item}"><strong>${link(x.url, x.docketNumber)} — ${esc(x.company)}</strong>`
       + `${x.caseType ? ` <span style="${S.label}">(${esc([x.docketType, x.caseType].filter(Boolean).join(" · "))})</span>` : ""}`
       + `<br>${esc(dkSum.get(Number(x.docketId)))}${docList(x, 6)}</div>`);
   }
   if (rest.length) {
-    out.push(`<p style="${S.h3}">Other docket activity (${rest.length})</p>`);
+    out.push(`<p class="acc-h3" style="${S.h3}">Other docket activity (${rest.length})</p>`);
     for (const x of rest) {
-      out.push(`<div style="margin:0 0 8px;font-size:14px;">${link(x.url, x.docketNumber)} — ${esc(x.company)}`
+      out.push(`<div class="acc-item" style="margin:0 0 8px;font-size:14px;">${link(x.url, x.docketNumber)} — ${esc(x.company)}`
         + `<span style="${S.label}"> · ${esc(x.title.length > 160 ? x.title.slice(0, 157) + "…" : x.title)}</span>${docList(x, 3)}</div>`);
     }
   }
 
   // News releases
-  out.push(`<p style="${S.h2}">ACC news releases — last 48 hours</p>`);
+  out.push(`<p class="acc-h2" style="${S.h2}">ACC news releases — last 48 hours</p>`);
   if (!d.releases.length) {
     out.push(`<p style="${S.empty}">${d.releasesError ? "The ACC news page could not be reached this morning." : "No new releases in the last 48 hours."}`
       + (d.latestRelease ? ` Most recent: ${link(d.latestRelease.url, d.latestRelease.title)} (${esc(fmtYmd(d.latestRelease.date))}).` : "") + `</p>`);
   }
   for (const r of d.releases) {
-    out.push(`<div style="${S.item}"><strong>${link(r.url, r.title)}</strong> <span style="${S.label}">${esc(fmtYmd(r.date))}</span>`
+    out.push(`<div class="acc-item" style="${S.item}"><strong>${link(r.url, r.title)}</strong> <span style="${S.label}">${esc(fmtYmd(r.date))}</span>`
       + `${rlSum.get(normUrl(r.url)) ? `<br>${esc(rlSum.get(normUrl(r.url)))}` : ""}<p style="${S.small}">${link(r.url, "Read full release")}</p></div>`);
   }
 
   // News
-  out.push(`<p style="${S.h2}">In the news — last 48 hours</p>`);
+  out.push(`<p class="acc-h2" style="${S.h2}">In the news — last 48 hours</p>`);
   if (!d.news.length) out.push(`<p style="${S.empty}">${d.newsError ? "The news search was unavailable this morning." : "No qualifying ACC news coverage found in the last 48 hours."}</p>`);
   for (const n of d.news) {
-    out.push(`<div style="${S.item}"><strong>${esc(n.publication)}: ${esc(n.title)}</strong> <span style="${S.label}">${esc(fmtYmd(n.date))}</span>`
+    out.push(`<div class="acc-item" style="${S.item}"><strong>${esc(n.publication)}: ${esc(n.title)}</strong> <span style="${S.label}">${esc(fmtYmd(n.date))}</span>`
       + `<br>${esc(n.summary)}<p style="${S.small}">${link(n.url, `Read full article — ${n.publication || "source"}`)}</p></div>`);
   }
 
-  out.push(`<p style="${S.h2}">Sources</p><p style="${S.small}">${link(SOURCES.recentDockets, "eDocket: Recent Docket Activity")} · ${link(SOURCES.todaysEvents, "ACC: Today's Events")} · ${link(SOURCES.calendar, "ACC calendar")} · ${link(SOURCES.newsReleases, "ACC News Releases")}</p>`);
+  out.push(`<p class="acc-h2" style="${S.h2}">Sources</p><p style="${S.small}">${link(SOURCES.recentDockets, "eDocket: Recent Docket Activity")} · ${link(SOURCES.todaysEvents, "ACC: Today's Events")} · ${link(SOURCES.calendar, "ACC calendar")} · ${link(SOURCES.newsReleases, "ACC News Releases")}</p>`);
   if (notes.length) out.push(`<p style="${S.small}">Notes: ${esc(notes.join(" "))}</p>`);
   out.push(`</div>`);
   return out.join("\n");

@@ -57,6 +57,15 @@ export default function App() {
     setTimeout(() => setCopied(""), 2500);
   }
 
+  function savePdf() {
+    // Print layout (styles.css @media print) hides the app chrome; the title becomes the default PDF filename.
+    const prev = document.title;
+    document.title = `ACC Daily Briefing ${b.date}`;
+    const restore = () => { document.title = prev; window.removeEventListener("afterprint", restore); };
+    window.addEventListener("afterprint", restore);
+    window.print();
+  }
+
   const b = data?.briefing;
   const status = data?.status;
 
@@ -92,6 +101,7 @@ export default function App() {
             <button className={copied === "body" ? "copied" : "primary"} onClick={() => copyRich(sheetRef.current.innerHTML, sheetRef.current.innerText, "body")}>
               {copied === "body" ? "Copied — paste into Gmail" : "Copy for Gmail"}
             </button>
+            <button onClick={savePdf} title="Opens the print dialog — choose “Save as PDF” as the destination">Save as PDF</button>
             <span className="spacer" />
             <button onClick={generate} disabled={running || starting}>{running || starting ? "Working…" : "Regenerate now"}</button>
           </div>

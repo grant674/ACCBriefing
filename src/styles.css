@@ -48,3 +48,16 @@ button.copied { background: #e4efe6; border-color: #b9d4be; color: var(--ok); }
 .empty h2 { font-family: var(--serif); font-weight: 600; font-size: 22px; margin: 0 0 8px; }
 .empty p { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
 .foot { font-size: 12px; color: var(--muted); margin-top: 14px; text-align: center; }
+
+/* PDF / print: just the briefing, on white, with sensible page breaks */
+@page { size: letter; margin: 0.6in 0.65in; }
+@media print {
+  body { background: #fff; }
+  .page { max-width: none; padding: 0; }
+  .masthead, .toolbar, .subject, .banner, .foot { display: none !important; }
+  .sheet { border: 0; box-shadow: none; padding: 0; border-radius: 0; }
+  .sheet * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sheet .acc-item, .sheet .acc-glance { break-inside: avoid; }
+  .sheet .acc-h2, .sheet .acc-h3 { break-after: avoid; }
+  .sheet a { color: #1d4ed8; }
+}
