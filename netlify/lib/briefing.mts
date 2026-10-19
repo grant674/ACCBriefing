@@ -136,10 +136,11 @@ export async function collectReleases(now: number) {
   const re = /<a\b[^>]*href="((?:https?:\/\/(?:www\.)?azcc\.gov)?\/news\/home\/(\d{4})\/(\d{2})\/(\d{2})\/[^"#?]+)"[^>]*>([\s\S]*?)<\/a>/gi;
   for (const m of html.matchAll(re)) {
     const url = (m[1].startsWith("http") ? m[1] : AZCC + m[1]).replace(/^http:/, "https:");
-    const title = clean(decode(m[5].replace(/<[^>]+>/g, " ")));
+    // Strip screen-reader prefixes like "Read Article:" that azcc.gov puts inside the link text
+    const title = clean(decode(m[5].replace(/<[^>]+>/g, " "))).replace(/^read (?:article|more)\s*:\s*/i, "");
     const prev = found.get(url);
-    if (!prev || (title.length > prev.title.length && !/^read more$/i.test(title)))
-      found.set(url, { url, date: `${m[2]}-${m[3]}-${m[4]}`, title: /^read more$/i.test(title) ? prev?.title || "" : title });
+    if (!prev || (title.length > prev.title.length && !/^read (?:more|article)$/i.test(title)))
+      found.set(url, { url, date: `${m[2]}-${m[3]}-${m[4]}`, title: /^read (?:more|article)$/i.test(title) ? prev?.title || "" : title });
   }
   const all = [...found.values()].filter((r) => r.title).sort((a, b) => b.date.localeCompare(a.date));
   const recent = all.filter((r) => r.date >= cutoffDay);
@@ -197,17 +198,29 @@ Rules: copy each url exactly as it appears in your search results. Include only 
   for (const b of msg.content as any[])
     if (b.type === "web_search_tool_result" && Array.isArray(b.content))
       for (const r of b.content) if (r?.url) seen.set(normUrl(r.url), r);
+  const debug: any = {
+    searches: (msg.content as any[]).filter((b) => b.type === "server_tool_use").length,
+    searchErrors: (msg.content as any[]).filter((b) => b.type === "web_search_tool_result" && !Array.isArray(b.content)).map((b) => b.content?.error_code || "error"),
+    resultsSeen: seen.size,
+    proposed: 0,
+    dropped: [] as any[],
+  };
   let items: any[] = [];
-  try { items = parseJSONFrom(textOf(msg)); } catch { items = []; }
-  if (!Array.isArray(items)) return [];
+  try { items = parseJSONFrom(textOf(msg)); } catch { debug.parseError = textOf(msg).slice(0, 300); items = []; }
+  if (!Array.isArray(items)) items = [];
+  debug.proposed = items.length;
   const out: any[] = [];
   for (const it of items) {
     const hit = it?.url ? seen.get(normUrl(it.url)) : null;
-    if (!hit || !/^\d{4}-\d{2}-\d{2}$/.test(it.date || "") || it.date < cutoffDay || !clean(it.summary)) continue;
-    if (out.some((o) => normUrl(o.url) === normUrl(hit.url))) continue;
+    const reason = !hit ? "url not in search results"
+      : !/^\d{4}-\d{2}-\d{2}$/.test(it.date || "") ? "no date"
+      : it.date < cutoffDay ? `older than ${cutoffDay}`
+      : !clean(it.summary) ? "no summary"
+      : out.some((o) => normUrl(o.url) === normUrl(hit.url)) ? "duplicate" : null;
+    if (reason) { debug.dropped.push({ title: clean(it?.title).slice(0, 120), url: it?.url, date: it?.date, reason }); continue; }
     out.push({ title: clean(it.title) || clean(hit.title), publication: clean(it.publication), date: it.date, url: hit.url, summary: clean(it.summary) });
   }
-  return out;
+  return { items: out, debug };
 }
 
 // ── Plain-language analysis of the collected ACC data ──────
@@ -355,7 +368,7 @@ export async function generateBriefing(now = Date.now()) {
     dockets: dk.status === "fulfilled" ? dk.value : [], docketsError: err(dk, "dockets"),
     events: ev.status === "fulfilled" ? ev.value : [], eventsError: err(ev, "events"),
     releases: rl.status === "fulfilled" ? rl.value.recent : [], latestRelease: rl.status === "fulfilled" ? rl.value.latest : null, releasesError: err(rl, "releases"),
-    news: nw.status === "fulfilled" ? nw.value : [], newsError: err(nw, "news"),
+    news: nw.status === "fulfilled" ? nw.value.items : [], newsDebug: nw.status === "fulfilled" ? nw.value.debug : null, newsError: err(nw, "news"),
   };
 
   let a: any = {};
@@ -372,6 +385,7 @@ export async function generateBriefing(now = Date.now()) {
     subject,
     html: renderHtml(now, d, a, notes),
     stats: { dockets: d.dockets.length, events: d.events.length, releases: d.releases.length, news: d.news.length },
+    diagnostics: { news: d.newsDebug },
     errors: { dockets: d.docketsError, events: d.eventsError, releases: d.releasesError, news: d.newsError, analysis: notes.length ? "failed" : null },
   };
 }
