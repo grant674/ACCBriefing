@@ -268,7 +268,7 @@ Include a summary for every event and every news release given. For dockets, cho
 
 // ── HTML rendering (inline styles so it pastes cleanly into Gmail) ──
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const C = { ink: "#1f2933", muted: "#5f6b7a", rule: "#d9dee5", accent: "#8a3b12", link: "#1d4ed8", soft: "#f6f3ee" };
+const C = { ink: "#302c1e", muted: "#6b6656", rule: "#e2ddd2", accent: "#a24f33", accentBright: "#c96c4d", link: "#1d4ed8", soft: "#f7f2ec" };
 const S = {
   wrap: `font-family:Georgia,'Times New Roman',serif;color:${C.ink};max-width:720px;line-height:1.55;font-size:15px;`,
   h1: `font-size:24px;margin:0 0 4px;font-weight:bold;color:${C.ink};`,
@@ -279,7 +279,7 @@ const S = {
   label: `font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${C.muted};`,
   a: `color:${C.link};text-decoration:underline;`,
   small: `font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:${C.muted};margin:4px 0 0;`,
-  glance: `background:${C.soft};border-left:4px solid ${C.accent};padding:10px 14px;margin:0 0 6px;`,
+  glance: `background:${C.soft};border-left:4px solid ${C.accentBright};padding:10px 14px;margin:0 0 6px;`,
   empty: `font-style:italic;color:${C.muted};margin:0 0 10px;`,
 };
 const link = (href: string, text: string) => `<a href="${esc(href)}" style="${S.a}">${esc(text)}</a>`;
@@ -292,7 +292,7 @@ function renderHtml(now: number, d: any, a: any, notes: string[]) {
   const out: string[] = [];
   out.push(`<div style="${S.wrap}">`);
   out.push(`<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 6px;"><tr>`
-    + `<td style="vertical-align:middle;padding:0 14px 0 0;"><img src="${esc(BRAND.logoUrl)}" alt="${esc(BRAND.name)}" height="44" style="height:44px;width:auto;display:block;border:0;"></td>`
+    + `<td style="vertical-align:middle;padding:0 14px 0 0;"><img src="${esc(BRAND.logoUrl)}" alt="${esc(BRAND.name)}" height="34" style="height:34px;width:auto;display:block;border:0;"></td>`
     + `<td style="vertical-align:middle;border-left:1px solid ${C.rule};padding:0 0 0 14px;"><p style="${S.h1}">ACC Daily Briefing</p></td>`
     + `</tr></table>`);
   out.push(`<p style="${S.meta}">Arizona Corporation Commission · ${esc(fmtLongDay(now))} · Activity since ${esc(fmtShort(cutoff))} ${esc(fmtTime(cutoff))} · Calendar through ${esc(fmtShort(now + 7 * DAY))}</p>`);

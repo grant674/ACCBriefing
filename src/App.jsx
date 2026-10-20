@@ -79,7 +79,7 @@ export default function App() {
         <div className="brand">
           {logoOk && <img className="brand-logo" src={LOGO} alt={BRAND} onError={() => setLogoOk(false)} />}
           <div>
-            <p className="kicker">{BRAND} · Arizona Corporation Commission</p>
+            <p className="kicker">Arizona Corporation Commission</p>
             <h1>ACC Daily Briefing</h1>
             <p className="when">
               {b ? `Generated ${fmtWhen(b.generatedAt)} Arizona time` : "Dockets · hearings · releases · press"}

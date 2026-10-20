@@ -1,11 +1,12 @@
 :root {
   --paper: #f4f0e8;
   --sheet: #fffdf9;
-  --ink: #1f2933;
+  --ink: #302c1e;
   --muted: #5f6b7a;
   --rule: #ddd6c9;
-  --accent: #8a3b12;
-  --accent-soft: #f3e4d9;
+  --accent: #a24f33;
+  --accent-bright: #c96c4d;
+  --accent-soft: #f6e8e1;
   --ok: #2f6b3a;
   --bad: #9b2226;
   --serif: "Source Serif 4", Georgia, serif;
@@ -18,7 +19,7 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 .masthead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   border-bottom: 3px double var(--ink); padding-bottom: 14px; margin-bottom: 18px; }
 .brand { display: flex; align-items: center; gap: 18px; }
-.brand-logo { height: 56px; width: auto; display: block; }
+.brand-logo { height: 46px; width: auto; display: block; }
 .brand-logo + div { border-left: 1px solid var(--rule); padding-left: 18px; }
 .masthead h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.01em; margin: 0; line-height: 1.05; }
 .masthead .kicker { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
@@ -31,7 +32,7 @@ button, select { font: 500 13px var(--sans); border-radius: 6px; padding: 8px 14
 button:hover:not(:disabled), select:hover { border-color: var(--muted); }
 button:disabled { opacity: .5; cursor: default; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-button.primary:hover:not(:disabled) { background: #6f2f0e; }
+button.primary:hover:not(:disabled) { background: #883f27; }
 button.copied { background: #e4efe6; border-color: #b9d4be; color: var(--ok); }
 
 .subject { font-size: 13px; background: var(--accent-soft); border: 1px solid #e6cdbb; border-radius: 6px;
@@ -56,8 +57,8 @@ button.copied { background: #e4efe6; border-color: #b9d4be; color: var(--ok); }
 @page {
   size: letter; margin: 0.6in 0.65in 0.75in;
   /* Footer on every PDF page (Chrome/Edge page margin boxes) */
-  @bottom-left { content: "Prepared by Pacheco · ACC Daily Briefing"; font: 8.5pt "IBM Plex Sans", Arial, sans-serif; color: #5f6b7a; }
-  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8.5pt "IBM Plex Sans", Arial, sans-serif; color: #5f6b7a; }
+  @bottom-left { content: "Prepared by Pacheco · ACC Daily Briefing"; font: 8.5pt "IBM Plex Sans", Arial, sans-serif; color: #6b6656; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8.5pt "IBM Plex Sans", Arial, sans-serif; color: #6b6656; }
 }
 @media print {
   body { background: #fff; }
