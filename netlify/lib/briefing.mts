@@ -244,7 +244,10 @@ async function analyze(client: Anthropic, now: number, data: { dockets: any[]; e
     newsHeadlines: data.news.map((n) => `${n.publication}: ${n.title}`),
   };
   const msg = await createMessage(client, {
-    max_tokens: 9000,
+    max_tokens: 12000,
+    // A forced tool call guarantees well-formed JSON (free-text JSON occasionally came back malformed).
+    tools: [SUBMIT_TOOL],
+    tool_choice: { type: "tool", name: SUBMIT_TOOL.name },
     system: `You are a senior public affairs analyst who covers the Arizona Corporation Commission (ACC) for an Arizona government relations firm. You turn raw regulatory records into a plain-language morning briefing for readers who know Arizona policy but are not lawyers. Explain what each item means and why it matters (for ratepayers, utilities, developers, investors) instead of restating titles. Briefly define unavoidable jargon (e.g. CEC, fair value, rate case, procedural conference). Use only the facts provided plus general knowledge of how ACC proceedings work; never invent outcomes, votes, numbers, or filing contents. When a record only says a document was filed, describe what that type of filing usually signals at that stage, and say so carefully.`,
     messages: [{
       role: "user",
@@ -252,7 +255,7 @@ async function analyze(client: Anthropic, now: number, data: { dockets: any[]; e
 
 ${JSON.stringify(payload)}
 
-Return ONLY JSON in exactly this shape:
+Call the submit_briefing tool with this content:
 {
   "subject": "Email subject line, e.g. 'ACC Daily Briefing — Mon, Oct 19: <the most notable item>'",
   "atAGlance": ["2-4 one-sentence takeaways a busy reader needs most today"],
@@ -263,8 +266,31 @@ Return ONLY JSON in exactly this shape:
 Include a summary for every event and every news release given. For dockets, choose the 12 most significant (rate cases, siting cases, securities actions, rulemakings, and large utilities first) and summarize those; the rest are listed automatically. Return [] for any empty section.`,
     }],
   });
-  return parseJSONFrom(textOf(msg));
+  if (msg.stop_reason === "max_tokens") throw new Error("analysis output hit the token limit");
+  const call = (msg.content as any[]).find((b) => b.type === "tool_use" && b.name === SUBMIT_TOOL.name);
+  if (!call?.input || typeof call.input !== "object") throw new Error(`no submit_briefing call (stop_reason: ${msg.stop_reason})`);
+  return call.input;
 }
+
+const summaryList = (idKey: string, idType: "integer" | "string") => ({
+  type: "array",
+  items: { type: "object", properties: { [idKey]: { type: idType }, summary: { type: "string" } }, required: [idKey, "summary"] },
+});
+const SUBMIT_TOOL = {
+  name: "submit_briefing",
+  description: "Submit the finished plain-language briefing content.",
+  input_schema: {
+    type: "object",
+    properties: {
+      subject: { type: "string", description: "Email subject line" },
+      atAGlance: { type: "array", items: { type: "string" }, description: "2-4 one-sentence takeaways" },
+      events: summaryList("eventId", "integer"),
+      dockets: summaryList("docketId", "integer"),
+      releases: summaryList("url", "string"),
+    },
+    required: ["subject", "atAGlance", "events", "dockets", "releases"],
+  },
+};
 
 // ── HTML rendering (inline styles so it pastes cleanly into Gmail) ──
 const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -386,12 +412,18 @@ export async function generateBriefing(now = Date.now()) {
   };
 
   let a: any = {};
-  try {
-    a = await analyze(client, now, d);
-  } catch (e) {
-    console.error("analysis failed:", e);
-    notes.push("Plain-language summaries could not be generated this run; the items below are listed directly from ACC records.");
+  let analysisError: string | null = null;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      a = await analyze(client, now, d);
+      analysisError = null;
+      break;
+    } catch (e) {
+      analysisError = String((e as Error)?.message || e);
+      console.error(`analysis attempt ${attempt} failed:`, e);
+    }
   }
+  if (analysisError) notes.push("Plain-language summaries could not be generated this run; the items below are listed directly from ACC records.");
   const subject = clean(a.subject) || `ACC Daily Briefing — ${fmtShort(now)}`;
   return {
     date: azDate(now),
@@ -400,6 +432,6 @@ export async function generateBriefing(now = Date.now()) {
     html: renderHtml(now, d, a, notes),
     stats: { dockets: d.dockets.length, events: d.events.length, releases: d.releases.length, news: d.news.length },
     diagnostics: { news: d.newsDebug },
-    errors: { dockets: d.docketsError, events: d.eventsError, releases: d.releasesError, news: d.newsError, analysis: notes.length ? "failed" : null },
+    errors: { dockets: d.docketsError, events: d.eventsError, releases: d.releasesError, news: d.newsError, analysis: analysisError },
   };
 }
