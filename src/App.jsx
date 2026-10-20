@@ -5,7 +5,11 @@ const fmtWhen = (ms) =>
 const fmtDate = (ymd) =>
   new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric", year: "numeric" }).format(new Date(`${ymd}T12:00:00Z`));
 
+const BRAND = "Pacheco";
+const LOGO = "/pacheco-logo.png";
+
 export default function App() {
+  const [logoOk, setLogoOk] = useState(true);
   const [data, setData] = useState(null);
   const [date, setDate] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -72,12 +76,15 @@ export default function App() {
   return (
     <div className="page">
       <header className="masthead">
-        <div>
-          <p className="kicker">Arizona Corporation Commission</p>
-          <h1>ACC Daily Briefing</h1>
-          <p className="when">
-            {b ? `Generated ${fmtWhen(b.generatedAt)} Arizona time` : "Dockets · hearings · releases · press"}
-          </p>
+        <div className="brand">
+          {logoOk && <img className="brand-logo" src={LOGO} alt={BRAND} onError={() => setLogoOk(false)} />}
+          <div>
+            <p className="kicker">{BRAND} · Arizona Corporation Commission</p>
+            <h1>ACC Daily Briefing</h1>
+            <p className="when">
+              {b ? `Generated ${fmtWhen(b.generatedAt)} Arizona time` : "Dockets · hearings · releases · press"}
+            </p>
+          </div>
         </div>
         {data?.dates?.length > 1 && (
           <select value={date} onChange={(e) => setDate(e.target.value)} aria-label="Choose a briefing date">
@@ -112,7 +119,7 @@ export default function App() {
             </button>
           </div>
           <article className="sheet" ref={sheetRef} dangerouslySetInnerHTML={{ __html: b.html }} />
-          <p className="foot">A new briefing is built automatically every morning at 6:00 AM Arizona time.</p>
+          <p className="foot">Prepared by {BRAND} · A new briefing is built automatically every morning at 6:00 AM Arizona time.</p>
         </>
       ) : (
         data && (

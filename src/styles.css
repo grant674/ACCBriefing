@@ -17,6 +17,9 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(
 
 .masthead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   border-bottom: 3px double var(--ink); padding-bottom: 14px; margin-bottom: 18px; }
+.brand { display: flex; align-items: center; gap: 18px; }
+.brand-logo { height: 56px; width: auto; display: block; }
+.brand-logo + div { border-left: 1px solid var(--rule); padding-left: 18px; }
 .masthead h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.01em; margin: 0; line-height: 1.05; }
 .masthead .kicker { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
 .masthead .when { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
@@ -50,7 +53,12 @@ button.copied { background: #e4efe6; border-color: #b9d4be; color: var(--ok); }
 .foot { font-size: 12px; color: var(--muted); margin-top: 14px; text-align: center; }
 
 /* PDF / print: just the briefing, on white, with sensible page breaks */
-@page { size: letter; margin: 0.6in 0.65in; }
+@page {
+  size: letter; margin: 0.6in 0.65in 0.75in;
+  /* Footer on every PDF page (Chrome/Edge page margin boxes) */
+  @bottom-left { content: "Prepared by Pacheco · ACC Daily Briefing"; font: 8.5pt "IBM Plex Sans", Arial, sans-serif; color: #5f6b7a; }
+  @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8.5pt "IBM Plex Sans", Arial, sans-serif; color: #5f6b7a; }
+}
 @media print {
   body { background: #fff; }
   .page { max-width: none; padding: 0; }

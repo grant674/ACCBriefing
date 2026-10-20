@@ -10,6 +10,14 @@ const DAY = 24 * HOUR;
 const UA = "Mozilla/5.0 (compatible; ACC-Daily-Briefing/2.0)";
 const MODELS = [process.env.BRIEFING_MODEL, "claude-sonnet-5-5", "claude-sonnet-4-6", "claude-sonnet-4-5"].filter(Boolean) as string[];
 
+// Branding. The logo is served from the site itself (public/pacheco-logo.png); an absolute URL
+// keeps it visible when the briefing is pasted into Gmail.
+const SITE_URL = (process.env.URL || "https://accbriefing.netlify.app").replace(/\/+$/, "");
+export const BRAND = {
+  name: "Pacheco",
+  logoUrl: `${SITE_URL}/pacheco-logo.png`,
+};
+
 export const SOURCES = {
   recentDockets: `${EDOCKET_WEB}/recent-dockets`,
   todaysEvents: `${AZCC}/news/today's-events`,
@@ -283,7 +291,10 @@ function renderHtml(now: number, d: any, a: any, notes: string[]) {
   const cutoff = now - 48 * HOUR;
   const out: string[] = [];
   out.push(`<div style="${S.wrap}">`);
-  out.push(`<p style="${S.h1}">ACC Daily Briefing</p>`);
+  out.push(`<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 6px;"><tr>`
+    + `<td style="vertical-align:middle;padding:0 14px 0 0;"><img src="${esc(BRAND.logoUrl)}" alt="${esc(BRAND.name)}" height="44" style="height:44px;width:auto;display:block;border:0;"></td>`
+    + `<td style="vertical-align:middle;border-left:1px solid ${C.rule};padding:0 0 0 14px;"><p style="${S.h1}">ACC Daily Briefing</p></td>`
+    + `</tr></table>`);
   out.push(`<p style="${S.meta}">Arizona Corporation Commission · ${esc(fmtLongDay(now))} · Activity since ${esc(fmtShort(cutoff))} ${esc(fmtTime(cutoff))} · Calendar through ${esc(fmtShort(now + 7 * DAY))}</p>`);
 
   if ((a.atAGlance || []).length) {
@@ -351,6 +362,9 @@ function renderHtml(now: number, d: any, a: any, notes: string[]) {
 
   out.push(`<p class="acc-h2" style="${S.h2}">Sources</p><p style="${S.small}">${link(SOURCES.recentDockets, "eDocket: Recent Docket Activity")} · ${link(SOURCES.todaysEvents, "ACC: Today's Events")} · ${link(SOURCES.calendar, "ACC calendar")} · ${link(SOURCES.newsReleases, "ACC News Releases")}</p>`);
   if (notes.length) out.push(`<p style="${S.small}">Notes: ${esc(notes.join(" "))}</p>`);
+  out.push(`<p class="acc-brand-note" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:${C.muted};border-top:1px solid ${C.rule};margin:24px 0 0;padding-top:10px;">`
+    + `Prepared by <strong style="color:${C.ink};">${esc(BRAND.name)}</strong> · Generated ${esc(fmtLongDay(now))} at ${esc(fmtTime(now))} Arizona time from Arizona Corporation Commission public records. `
+    + `Summaries are AI-assisted; confirm details in the linked filings.</p>`);
   out.push(`</div>`);
   return out.join("\n");
 }
