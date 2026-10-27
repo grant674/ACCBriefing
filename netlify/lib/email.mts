@@ -40,14 +40,17 @@ function wrap(briefingHtml: string, banner?: string) {
     + `<body style="margin:0;padding:24px 16px;background:#ffffff;">${warn}${top}${briefingHtml}${foot}</body></html>`;
 }
 
-export async function sendBriefingEmail(briefing: any, opts: { audience: "full" | "team"; banner?: string; subjectPrefix?: string }) {
+export async function sendBriefingEmail(briefing: any, opts: { audience: "full" | "team"; banner?: string; subjectPrefix?: string; only?: string[] }) {
   const s = emailSettings();
   if (!s.apiKey) throw new Error("RESEND_API_KEY is not set");
   if (!s.team.length) throw new Error("BRIEFING_REPLY_TO is not set");
   const bcc = opts.audience === "full" ? s.distro.filter((a) => !s.team.includes(a)) : [];
   const subject = `${opts.subjectPrefix || ""}${briefing.subject}`;
   const html = wrap(briefing.html, opts.banner);
-  const body: any = { from: s.from, to: s.team, reply_to: s.team, subject, html, text: toText(html) };
+  // `only` narrows a team send to a subset of the team (used for tests); replies then go to that subset too.
+  const team = opts.only?.length ? s.team.filter((a) => opts.only!.map((x) => x.toLowerCase()).includes(a.toLowerCase())) : s.team;
+  if (!team.length) throw new Error("None of the requested test recipients are on BRIEFING_REPLY_TO");
+  const body: any = { from: s.from, to: team, reply_to: team, subject, html, text: toText(html) };
   if (bcc.length) body.bcc = bcc;
   const res = await fetch(RESEND_URL, {
     method: "POST",
@@ -55,12 +58,12 @@ export async function sendBriefingEmail(briefing: any, opts: { audience: "full" 
       Authorization: `Bearer ${s.apiKey}`,
       "Content-Type": "application/json",
       // Resend dedupes on this key for 24h, so a retried send can't double-deliver.
-      "Idempotency-Key": `acc-briefing-${briefing.date}-${opts.audience}-${briefing.generatedAt}`,
+      "Idempotency-Key": `acc-briefing-${briefing.date}-${opts.audience}-${briefing.generatedAt}-${team.join("+")}${opts.subjectPrefix === "[Test] " ? "-" + Date.now() : ""}`,
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(20_000),
   });
   const out = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`Resend ${res.status}: ${out?.message || out?.name || "send failed"}`);
-  return { id: out.id, to: s.team.length, bcc: bcc.length };
+  return { id: out.id, to: team, bcc: bcc.length };
 }
