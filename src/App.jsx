@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import TestPanel from "./TestPanel.jsx";
 
 const fmtWhen = (ms) =>
   new Intl.DateTimeFormat("en-US", { timeZone: "America/Phoenix", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(ms));
@@ -75,6 +76,7 @@ export default function App() {
 
   return (
     <div className="page">
+      {typeof window !== "undefined" && window.location.hash === "#send-test" && <TestPanel />}
       <header className="masthead">
         <div className="brand">
           {logoOk && <img className="brand-logo" src={LOGO} alt={BRAND} onError={() => setLogoOk(false)} />}

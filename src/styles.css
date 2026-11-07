@@ -53,6 +53,13 @@ button.copied { background: #e4efe6; border-color: #b9d4be; color: var(--ok); }
 .empty p { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
 .foot { font-size: 12px; color: var(--muted); margin-top: 14px; text-align: center; }
 
+.test-panel { background: var(--sheet); border: 1px solid var(--rule); border-left: 4px solid var(--accent-bright); border-radius: 6px;
+  padding: 12px 16px; margin-bottom: 16px; font-size: 13.5px; display: grid; gap: 8px; }
+.test-panel p { margin: 0; color: var(--muted); }
+.test-panel label { display: flex; gap: 8px; align-items: center; }
+.test-panel button { justify-self: start; }
+.test-panel .tp-ok { color: var(--ok); } .test-panel .tp-err { color: var(--bad); }
+
 /* PDF / print: just the briefing, on white, with sensible page breaks */
 @page {
   size: letter; margin: 0.6in 0.65in 0.75in;

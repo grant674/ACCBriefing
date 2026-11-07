@@ -6,6 +6,11 @@ import { getStore } from "@netlify/blobs";
 import { sendBriefingEmail, emailSettings } from "../lib/email.mts";
 
 export default async (req: Request) => {
+  // GET: setup status for the test panel (site URL + #send-test). No secrets returned.
+  if (req.method === "GET") {
+    const s = emailSettings();
+    return Response.json({ from: s.from, team: s.team, hasKey: !!s.apiKey, distroCount: s.distro.length }, { headers: { "Cache-Control": "no-store" } });
+  }
   let only: string[] = [];
   try { const b = await req.json(); if (Array.isArray(b?.to)) only = b.to.map(String); } catch { /* no body: whole team */ }
   const store = getStore({ name: "acc-briefing", consistency: "strong" });
@@ -24,4 +29,4 @@ export default async (req: Request) => {
   }
 };
 
-export const config: Config = { path: "/api/send-test", method: "POST" };
+export const config: Config = { path: "/api/send-test", method: ["GET", "POST"] };

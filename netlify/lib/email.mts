@@ -1,6 +1,6 @@
 // Email delivery via Resend (https://resend.com). Settings come from Netlify environment variables:
 //   RESEND_API_KEY        required — from resend.com → API Keys
-//   BRIEFING_FROM         sender, default "Pacheco ACC Briefing <briefing@pachecoaz.com>" (domain must be verified in Resend)
+//   BRIEFING_FROM         sender, default "Pacheco ACC Briefing <briefing@pachecoventuresaz.com>" (domain must be verified in Resend)
 //   BRIEFING_REPLY_TO     comma-separated team addresses; replies go here and they're on the To: line of every send
 //   BRIEFING_RECIPIENTS   comma-separated distribution list (Bcc'd). If empty, only the team receives it.
 import { BRAND } from "./briefing.mts";
@@ -15,7 +15,7 @@ export function emailSettings() {
   const env = (k: string) => (globalThis as any).Netlify?.env?.get(k) ?? process.env[k];
   return {
     apiKey: env("RESEND_API_KEY") || "",
-    from: env("BRIEFING_FROM") || "Pacheco ACC Briefing <briefing@pachecoaz.com>",
+    from: env("BRIEFING_FROM") || "Pacheco ACC Briefing <briefing@pachecoventuresaz.com>",
     team: list(env("BRIEFING_REPLY_TO")),
     distro: list(env("BRIEFING_RECIPIENTS")),
   };

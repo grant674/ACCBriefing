@@ -40,8 +40,8 @@ Netlify environment variables (Site configuration → Environment variables, sco
 | Variable | Value |
 |---|---|
 | `RESEND_API_KEY` | API key from resend.com → API Keys (sending access) |
-| `BRIEFING_FROM` | optional; default `Pacheco ACC Briefing <briefing@pachecoaz.com>` |
+| `BRIEFING_FROM` | optional; default `Pacheco ACC Briefing <briefing@pachecoventuresaz.com>` |
 | `BRIEFING_REPLY_TO` | team addresses, comma-separated. Replies go to all of them; they're on the To: line. |
 | `BRIEFING_RECIPIENTS` | distribution list, comma-separated (sent as Bcc). Leave empty to send to the team only. |
 
-Resend setup: add and verify the domain `pachecoaz.com` (Resend shows the SPF/DKIM DNS records to add).
+Resend setup: add and verify the domain `pachecoventuresaz.com` (Resend shows the SPF/DKIM DNS records to add).
