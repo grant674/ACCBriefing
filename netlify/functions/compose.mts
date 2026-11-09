@@ -1,7 +1,7 @@
 // /api/compose — the Compose panel (site URL + #send). Every action needs the passcode in
 // BRIEFING_ADMIN_CODE (Netlify environment variable), sent as the "x-admin-code" header.
 //   GET                      → saved note, today's send status, team, distribution count
-//   POST {action:"save", note}           → save a note for the next 6:30 AM email
+//   POST {action:"save", note}           → save a note for the next noon email
 //   POST {action:"clear"}                → remove the saved note
 //   POST {action:"send", note, audience} → email the latest briefing now; audience "team" | "full"
 import type { Config } from "@netlify/functions";
@@ -66,7 +66,7 @@ export default async (req: Request) => {
         audience, note, manual: true, subjectPrefix: audience === "team" ? "[Preview] " : "",
       });
       if (audience === "full") {
-        // Counts as that day's send, so the 6:30 job won't send the same briefing again.
+        // Counts as that day's send, so the noon job won't send the same briefing again.
         await store.setJSON(`sent/${briefing.date}`, { audience: "full", manual: true, note: !!note.trim(), ...result, at: Date.now() });
         if (note.trim()) await store.delete("note/next");
       }

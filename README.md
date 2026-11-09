@@ -30,7 +30,7 @@ production deploy). To use your own Anthropic key instead, set `ANTHROPIC_API_KE
 Site configuration → Environment variables (scope: Functions) and redeploy. Optional: `BRIEFING_MODEL` to pin a model.
 
 ## Email delivery (Resend)
-- `netlify/functions/send-briefing.mts` — scheduled 6:30 AM Arizona (13:30 UTC), 30 min after the build.
+- `netlify/functions/send-briefing.mts` — scheduled 12:00 PM Arizona (19:00 UTC); the briefing builds at 6:00 AM, leaving the morning to add a note.
   Sends today's briefing once per day. If today's build failed or the summaries failed, it goes to the
   team only, marked "[Not sent]" / "[Held for review]", and never to the distribution list.
 - `POST /api/send-test` — sends the latest briefing to the team only (max one per 10 minutes).
@@ -50,9 +50,9 @@ Resend setup: add and verify the domain `pachecoventuresaz.com` (Resend shows th
 Open the site with `#send` (e.g. https://accbriefing.netlify.app/#send) and enter the passcode
 (`BRIEFING_ADMIN_CODE` in Netlify). From there:
 - **Note**: text shown in a box above the briefing in the email.
-- **Save for 6:30 AM email**: the note rides on the next scheduled send, then clears itself.
+- **Save for noon email**: the note rides on the next scheduled send, then clears itself.
 - **Send preview to team**: emails the latest briefing (with the note) to the team only.
-- **Send to everyone now**: emails it to the team + distribution list; the 6:30 job won't resend that briefing.
+- **Send to everyone now**: emails it to the team + distribution list; the noon send won't resend that briefing.
 
 | Variable | Value |
 |---|---|

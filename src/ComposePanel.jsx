@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 // Opened by visiting the site with #send. Passcode-protected: write a note that appears above the
-// briefing in the email, save it for the next 6:30 AM send, or send the email now.
+// briefing in the email, save it for the next noon send, or send the email now.
 const KEY = "acc-compose-code";
 const read = () => { try { return localStorage.getItem(KEY) || ""; } catch { return ""; } };
 const write = (v) => { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch { /* storage unavailable */ } };
@@ -44,10 +44,10 @@ export default function ComposePanel() {
     setBusy("");
     if (!j.ok) { setMsg({ err: j.error }); return; }
     if (kind === "clear") setNote("");
-    setMsg({ ok: kind === "save" ? "Saved. It will appear above tomorrow's 6:30 AM email, then clear itself."
+    setMsg({ ok: kind === "save" ? "Saved. It will appear above the next noon email, then clear itself."
       : kind === "clear" ? "Saved note removed."
       : kind === "team" ? `Preview sent to ${j.to.join(", ")}.`
-      : `Sent to ${j.to.length} on To:${j.bcc ? ` and ${j.bcc} on Bcc` : ""}. The 6:30 AM job won't resend this briefing.` });
+      : `Sent to ${j.to.length} on To:${j.bcc ? ` and ${j.bcc} on Bcc` : ""}. The noon send won't resend this briefing.` });
     load();
   }
 
@@ -71,14 +71,14 @@ export default function ComposePanel() {
         Latest briefing: {info.latest ? `${info.latest.subject}` : "none yet"}
         {info.latest?.analysisFailed && " ⚠ summaries failed, so regenerate it before sending to everyone"}
         <br />From {info.from} · To: {info.team.join(", ")}{info.distroCount ? ` · Bcc: ${info.distroCount} on the distribution list` : " · no distribution list yet"}
-        <br />{info.sentToday ? `Today's email already went out at ${fmt(info.sentToday.at)}.` : "Today's email hasn't gone out yet (scheduled 6:30 AM)."}
+        <br />{info.sentToday ? `Today's email already went out at ${fmt(info.sentToday.at)}.` : "Today's email hasn't gone out yet (scheduled for 12:00 PM)."}
       </p>
       <label htmlFor="note">Note (appears in a box above the briefing; leave blank for none)</label>
       <textarea id="note" rows={5} maxLength={4000} value={note} onChange={(e) => setNote(e.target.value)}
         placeholder="e.g. Heads up: the APS rate case hearing moves to Thursday. Call me with questions. — Grant" />
-      {info.note?.text && <p className="meta">A note is saved for the next 6:30 AM email (saved {fmt(info.note.savedAt)}).</p>}
+      {info.note?.text && <p className="meta">A note is saved for the next noon email (saved {fmt(info.note.savedAt)}).</p>}
       <div className="row wrap">
-        <button onClick={() => act("save")} disabled={!!busy || !note.trim()}>{busy === "save" ? "Saving…" : "Save for 6:30 AM email"}</button>
+        <button onClick={() => act("save")} disabled={!!busy || !note.trim()}>{busy === "save" ? "Saving…" : "Save for noon email"}</button>
         {info.note?.text && <button onClick={() => act("clear")} disabled={!!busy}>Remove saved note</button>}
         <span className="spacer" />
         <button onClick={() => act("team")} disabled={!!busy || !info.latest}>{busy === "team" ? "Sending…" : "Send preview to team"}</button>

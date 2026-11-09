@@ -1,5 +1,5 @@
-// Scheduled: emails the morning briefing at 6:30 AM Arizona (13:30 UTC; Arizona has no DST),
-// 30 minutes after the 6:00 build. Scheduled functions can't be called by URL, so nobody can
+// Scheduled: emails the briefing at 12:00 PM (noon) Arizona (19:00 UTC; Arizona has no DST).
+// It builds at 6:00 AM, which leaves the morning to add a note in the Compose panel. Scheduled functions can't be called by URL, so nobody can
 // trigger a send to the distribution list from outside.
 import type { Config } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
@@ -46,4 +46,4 @@ export default async () => {
   }
 };
 
-export const config: Config = { schedule: "30 13 * * *" };
+export const config: Config = { schedule: "0 19 * * *" };
