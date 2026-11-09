@@ -7,7 +7,7 @@ const read = () => { try { return localStorage.getItem(KEY) || ""; } catch { ret
 const write = (v) => { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch { /* storage unavailable */ } };
 const fmt = (ms) => new Intl.DateTimeFormat("en-US", { timeZone: "America/Phoenix", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(ms));
 
-export default function ComposePanel() {
+export default function ComposePanel({ onClose }) {
   const [code, setCode] = useState(read());
   const [info, setInfo] = useState(null);
   const [note, setNote] = useState("");
@@ -76,10 +76,12 @@ export default function ComposePanel() {
     load();
   }
 
+  function lock() { write(""); setInfo(null); setCode(""); onClose?.(); }
+
   if (!info) {
     return (
       <div className="compose">
-        <strong>Compose the briefing email</strong>
+        <div className="row"><strong>Compose the briefing email</strong><span className="spacer" />{onClose && <button className="linklike" onClick={onClose}>Close</button>}</div>
         <div className="row">
           <input type="password" placeholder="Passcode" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === "Enter" && load()} />
           <button className="primary" onClick={load} disabled={!code}>Unlock</button>
@@ -91,7 +93,8 @@ export default function ComposePanel() {
 
   return (
     <div className="compose">
-      <strong>Compose the briefing email</strong>
+      <div className="row"><strong>Compose the briefing email</strong><span className="spacer" />
+        <button className="linklike" onClick={lock} title="Forget the passcode on this browser and hide this panel">Lock</button></div>
       <p className="meta">
         Latest briefing: {info.latest ? `${info.latest.subject}` : "none yet"}
         {info.latest?.analysisFailed && " ⚠ summaries failed, so regenerate it before sending to everyone"}

@@ -12,9 +12,12 @@ const LOGO = "/pacheco-logo.png";
 export default function App() {
   const [logoOk, setLogoOk] = useState(true);
   const isComposeHash = () => typeof window !== "undefined" && ["#send", "#compose", "#send-test"].includes(window.location.hash);
-  const [showCompose, setShowCompose] = useState(isComposeHash());
+  // The Compose panel shows on the main page in any browser that has unlocked it before (passcode
+  // remembered), or via #send / the footer "Team" link. Visitors from the email link never see it.
+  const hasSavedCode = () => { try { return !!localStorage.getItem("acc-compose-code"); } catch { return false; } };
+  const [showCompose, setShowCompose] = useState(isComposeHash() || hasSavedCode());
   useEffect(() => {
-    const onHash = () => setShowCompose(isComposeHash());
+    const onHash = () => setShowCompose(isComposeHash() || hasSavedCode());
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -83,7 +86,7 @@ export default function App() {
 
   return (
     <div className="page">
-      {showCompose && <ComposePanel />}
+      {showCompose && <ComposePanel onClose={() => { setShowCompose(false); if (isComposeHash()) history.replaceState(null, "", location.pathname); }} />}
       <header className="masthead">
         <div className="brand">
           {logoOk && <img className="brand-logo" src={LOGO} alt={BRAND} onError={() => setLogoOk(false)} />}
@@ -128,7 +131,10 @@ export default function App() {
             </button>
           </div>
           <article className="sheet" ref={sheetRef} dangerouslySetInnerHTML={{ __html: b.html }} />
-          <p className="foot">Prepared by {BRAND} · A new briefing is built automatically every morning at 6:00 AM Arizona time.</p>
+          <p className="foot">
+            Prepared by {BRAND} · A new briefing is built automatically every morning at 6:00 AM Arizona time.
+            {!showCompose && <> · <button className="linklike" onClick={() => { setShowCompose(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Team</button></>}
+          </p>
         </>
       ) : (
         data && (
