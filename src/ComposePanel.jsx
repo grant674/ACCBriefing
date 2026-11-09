@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 const KEY = "acc-compose-code";
 const read = () => { try { return localStorage.getItem(KEY) || ""; } catch { return ""; } };
 const write = (v) => { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch { /* storage unavailable */ } };
+const isWeekendAZ = () => ["Sat", "Sun"].includes(new Intl.DateTimeFormat("en-US", { timeZone: "America/Phoenix", weekday: "short" }).format(new Date()));
 const fmt = (ms) => new Intl.DateTimeFormat("en-US", { timeZone: "America/Phoenix", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(ms));
 
 export default function ComposePanel({ onClose }) {
@@ -69,7 +70,7 @@ export default function ComposePanel({ onClose }) {
     setBusy("");
     if (!j.ok) { setMsg({ err: j.error }); return; }
     if (kind === "clear") setNote("");
-    setMsg({ ok: kind === "save" ? "Saved. It will appear above the next noon email, then clear itself."
+    setMsg({ ok: kind === "save" ? "Saved. It will appear above the next noon email (Monday–Friday), then clear itself."
       : kind === "clear" ? "Saved note removed."
       : kind === "team" ? `Preview sent to ${j.to.join(", ")}.`
       : `Sent: team copy to ${j.to.length}${j.distro ? `, plus ${j.distro} individual copies to the distribution list` : ""}.${j.failures ? ` Some batches failed: ${j.failures.join("; ")}` : ""} The noon send won't resend this briefing.` });
@@ -99,7 +100,7 @@ export default function ComposePanel({ onClose }) {
         Latest briefing: {info.latest ? `${info.latest.subject}` : "none yet"}
         {info.latest?.analysisFailed && " ⚠ summaries failed, so regenerate it before sending to everyone"}
         <br />From {info.from} · Team (To:): {info.team.join(", ")} · Distribution list: {info.distroCount ? `${info.distroCount} (each gets their own copy)` : "empty"}
-        <br />{info.sentToday ? `Today's email already went out at ${fmt(info.sentToday.at)}.` : "Today's email hasn't gone out yet (scheduled for 12:00 PM)."}
+        <br />{info.sentToday ? `Today's email already went out at ${fmt(info.sentToday.at)}.` : (isWeekendAZ() ? "No automatic email today. The noon send runs Monday–Friday; use \"Send to everyone now\" if needed." : "Today's email hasn't gone out yet (scheduled for 12:00 PM).")}
       </p>
       <label htmlFor="note">Note (appears in a box above the briefing; leave blank for none)</label>
       <textarea id="note" rows={5} maxLength={4000} value={note} onChange={(e) => setNote(e.target.value)}

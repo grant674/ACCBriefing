@@ -1,4 +1,5 @@
-// Scheduled: emails the briefing at 12:00 PM (noon) Arizona (19:00 UTC; Arizona has no DST).
+// Scheduled: emails the briefing at 12:00 PM (noon) Arizona, Monday–Friday only (19:00 UTC; Arizona has
+// no DST, and 19:00 UTC falls on the same calendar day as noon in Arizona, so 1-5 means Mon–Fri there).
 // It builds at 6:00 AM, which leaves the morning to add a note in the Compose panel. Scheduled functions can't be called by URL, so nobody can
 // trigger a send to the distribution list from outside.
 import type { Config } from "@netlify/functions";
@@ -46,4 +47,4 @@ export default async () => {
   }
 };
 
-export const config: Config = { schedule: "0 19 * * *" };
+export const config: Config = { schedule: "0 19 * * 1-5" };

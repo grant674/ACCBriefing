@@ -30,7 +30,7 @@ production deploy). To use your own Anthropic key instead, set `ANTHROPIC_API_KE
 Site configuration → Environment variables (scope: Functions) and redeploy. Optional: `BRIEFING_MODEL` to pin a model.
 
 ## Email delivery (Resend)
-- `netlify/functions/send-briefing.mts` — scheduled 12:00 PM Arizona (19:00 UTC); the briefing builds at 6:00 AM, leaving the morning to add a note.
+- `netlify/functions/send-briefing.mts` — scheduled 12:00 PM Arizona, Monday–Friday (19:00 UTC, cron `0 19 * * 1-5`); the briefing builds at 6:00 AM, leaving the morning to add a note.
   Sends today's briefing once per day. If today's build failed or the summaries failed, it goes to the
   team only, marked "[Not sent]" / "[Held for review]", and never to the distribution list.
 - `POST /api/send-test` — sends the latest briefing to the team only (max one per 10 minutes).
