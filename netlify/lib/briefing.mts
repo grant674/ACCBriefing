@@ -122,9 +122,10 @@ export async function collectEvents(now: number) {
     let e = byId.get(r.EventID);
     if (!e) {
       // The calendar's Notes field is rich text (HTML from its editor): convert it to plain text.
-      const notes = (Array.isArray(r.Notes) ? r.Notes : [r.Notes]).map((n: unknown) => clean(htmlToText(String(n ?? "")))).filter(Boolean);
-      // "See Notes" / "Other" are placeholders the calendar uses when the real place is in the notes.
-      const place = [clean(r.Location), clean(r.City)].filter((x) => x && !/^(see notes?|other|n\/?a|tbd)$/i.test(x));
+      // "See Notes" / "Other" are placeholders the calendar uses when the real details are in the notes.
+      const placeholder = (x: string) => !x || /^(see notes?|other|n\/?a|tbd|none)\.?$/i.test(x);
+      const notes = (Array.isArray(r.Notes) ? r.Notes : [r.Notes]).map((n: unknown) => clean(htmlToText(String(n ?? "")))).filter((x: string) => !placeholder(x));
+      const place = [clean(r.Location), clean(r.City)].filter((x) => !placeholder(x));
       e = { eventId: r.EventID, type: clean(r.EventType), subject: clean(r.Subject), start: Number(r.Start), end: Number(r.End),
         location: place.join(", "), notes: notes.join(" "), hasNotice: !!clean(r.NoticeFileName),
         dockets: [] as any[], companies: [] as string[] };
