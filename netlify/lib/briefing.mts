@@ -121,9 +121,12 @@ export async function collectEvents(now: number) {
   for (const r of data.result || []) {
     let e = byId.get(r.EventID);
     if (!e) {
-      const notes = (r.Notes || []).map(clean).filter(Boolean);
+      // The calendar's Notes field is rich text (HTML from its editor): convert it to plain text.
+      const notes = (Array.isArray(r.Notes) ? r.Notes : [r.Notes]).map((n: unknown) => clean(htmlToText(String(n ?? "")))).filter(Boolean);
+      // "See Notes" / "Other" are placeholders the calendar uses when the real place is in the notes.
+      const place = [clean(r.Location), clean(r.City)].filter((x) => x && !/^(see notes?|other|n\/?a|tbd)$/i.test(x));
       e = { eventId: r.EventID, type: clean(r.EventType), subject: clean(r.Subject), start: Number(r.Start), end: Number(r.End),
-        location: [clean(r.Location), clean(r.City)].filter(Boolean).join(", "), dialIn: notes.join(" "), hasNotice: !!clean(r.NoticeFileName),
+        location: place.join(", "), notes: notes.join(" "), hasNotice: !!clean(r.NoticeFileName),
         dockets: [] as any[], companies: [] as string[] };
       byId.set(r.EventID, e);
     }
@@ -236,7 +239,7 @@ async function analyze(client: Anthropic, now: number, data: { dockets: any[]; e
   const payload = {
     today: fmtLongDay(now),
     events: data.events.map((e) => ({ eventId: e.eventId, when: `${fmtShort(e.start)} ${fmtTime(e.start)}`, type: e.type, subject: e.subject,
-      dockets: e.dockets.map((d: any) => d.number), companies: e.companies, location: e.location })),
+      dockets: e.dockets.map((d: any) => d.number), companies: e.companies, location: e.location, notes: (e.notes || "").slice(0, 300) })),
     dockets: data.dockets.map((d) => ({ docketId: d.docketId, docketNumber: d.docketNumber, company: d.company, matter: d.title.slice(0, 600),
       docketType: d.docketType, caseType: d.caseType, status: d.status, activity: d.activityTypes, newDocumentCount: d.newDocumentCount,
       newDocuments: d.documents.map((x: any) => `${x.date}: ${x.type}${x.filedBy ? ` — filed by ${x.filedBy}` : ""}${x.filedFor ? ` for ${x.filedFor}` : ""}`) })),
@@ -309,6 +312,14 @@ const S = {
   empty: `font-style:italic;color:${C.muted};margin:0 0 10px;`,
 };
 const link = (href: string, text: string) => `<a href="${esc(href)}" style="${S.a}">${esc(text)}</a>`;
+// Plain text with any web addresses turned into links (e.g. a project website or Teams link in event notes).
+const linkify = (text: string) =>
+  text.split(/(https?:\/\/[^\s<>"]+)/g).map((part, i) => {
+    if (i % 2 === 0) return esc(part);
+    const url = part.replace(/[.,;:)\]]+$/, ""), tail = part.slice(url.length);
+    const shown = url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+    return link(url, shown.length > 48 ? `${shown.split("/")[0]}/…` : shown) + esc(tail);
+  }).join("");
 
 function renderHtml(now: number, d: any, a: any, notes: string[]) {
   const evSum = new Map((a.events || []).map((x: any) => [Number(x.eventId), clean(x.summary)]));
@@ -339,7 +350,7 @@ function renderHtml(now: number, d: any, a: any, notes: string[]) {
     const summary = evSum.get(Number(e.eventId));
     out.push(`<div class="acc-item" style="${S.item}"><strong>${esc(fmtTime(e.start))} — ${esc(e.type)}</strong>${e.companies.length ? `: ${esc(e.companies.join(", "))}` : ""}`
       + (summary ? `<br>${esc(summary)}` : e.subject ? `<br>${esc(e.subject)}` : "")
-      + `<p style="${S.small}">${[e.location && esc(e.location), dockets && `Docket ${dockets}`, e.dialIn && `Dial-in: ${esc(e.dialIn)}`].filter(Boolean).join(" · ")}</p></div>`);
+      + `<p style="${S.small}">${[e.location && esc(e.location), dockets && `Docket ${dockets}`, e.notes && linkify(e.notes.length > 400 ? e.notes.slice(0, 397) + "…" : e.notes)].filter(Boolean).join(" · ")}</p></div>`);
   }
 
   // Dockets
