@@ -11,7 +11,10 @@ export default async () => {
   const store = getStore({ name: "acc-briefing", consistency: "strong" });
   const today = azDate(Date.now());
   const sentKey = `sent/${today}`;
-  if (await store.get(sentKey)) { console.log(`Already sent for ${today}`); return; }
+  // Claim the day atomically: if a manual "Send to everyone now" (or an earlier run) already
+  // claimed it, this write is refused and nothing is sent, so no duplicate at noon.
+  const claim = await store.setJSON(sentKey, { state: "sending", by: "noon", at: Date.now() }, { onlyIfNew: true });
+  if (!claim.modified) { console.log(`Already sent (or sending) for ${today}; skipping`); return; }
 
   const briefing: any = await store.get("latest", { type: "json" });
   const status: any = await store.get("status", { type: "json" });
@@ -43,7 +46,9 @@ export default async () => {
     console.log(`Briefing email sent for ${today}:`, JSON.stringify(result));
   } catch (e: any) {
     console.error("Briefing email failed:", e);
-    await store.setJSON("lastSendError", { date: today, at: Date.now(), error: String(e?.message || e) });
+    const error = String(e?.message || e);
+    await store.setJSON(sentKey, { state: "failed", by: "noon", at: Date.now(), error });
+    await store.setJSON("lastSendError", { date: today, at: Date.now(), error });
   }
 };
 

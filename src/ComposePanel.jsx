@@ -62,7 +62,8 @@ export default function ComposePanel({ onClose }) {
 
   async function act(kind) {
     const recipients = kind === "full" ? info.team.length + info.distroCount : info.team.length;
-    if (kind === "full" && !window.confirm(`Send the latest briefing${note.trim() ? " with your note" : ""} to everyone (${recipients} recipients) now?`)) return;
+    const already = info.sentToday && info.sentToday.state !== "failed" ? " Today's email has ALREADY gone out, so this sends it again." : "";
+    if (kind === "full" && !window.confirm(`Send the latest briefing${note.trim() ? " with your note" : ""} to everyone (${recipients} recipients) now?${already}${already ? "" : " The noon send will be skipped today."}`)) return;
     setBusy(kind); setMsg(null);
     const j = kind === "save" ? await call("POST", { action: "save", note })
       : kind === "clear" ? await call("POST", { action: "clear" })
@@ -100,7 +101,7 @@ export default function ComposePanel({ onClose }) {
         Latest briefing: {info.latest ? `${info.latest.subject}` : "none yet"}
         {info.latest?.analysisFailed && " ⚠ summaries failed, so regenerate it before sending to everyone"}
         <br />From {info.from} · Team (To:): {info.team.join(", ")} · Distribution list: {info.distroCount ? `${info.distroCount} (each gets their own copy)` : "empty"}
-        <br />{info.sentToday ? `Today's email already went out at ${fmt(info.sentToday.at)}.` : (isWeekendAZ() ? "No automatic email today. The noon send runs Monday–Friday; use \"Send to everyone now\" if needed." : "Today's email hasn't gone out yet (scheduled for 12:00 PM).")}
+        <br />{info.sentToday?.state === "failed" ? `Today's noon send failed (${info.sentToday.error}). Use "Send to everyone now" to retry.` : info.sentToday?.state === "sending" ? "Today's email is being sent right now." : info.sentToday ? `Today's email already went out at ${fmt(info.sentToday.at)}${info.sentToday.manual ? " (sent manually)" : ""}; noon won't send again.` : (isWeekendAZ() ? "No automatic email today. The noon send runs Monday–Friday; use \"Send to everyone now\" if needed." : "Today's email hasn't gone out yet (scheduled for 12:00 PM).")}
       </p>
       <label htmlFor="note">Note (appears in a box above the briefing; leave blank for none)</label>
       <textarea id="note" rows={5} maxLength={4000} value={note} onChange={(e) => setNote(e.target.value)}
