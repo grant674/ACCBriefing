@@ -2,14 +2,40 @@
 //   RESEND_API_KEY        required — from resend.com → API Keys
 //   BRIEFING_FROM         sender, default "Pacheco ACC Briefing <briefing@pachecoventuresaz.com>" (domain must be verified in Resend)
 //   BRIEFING_REPLY_TO     comma-separated team addresses; replies go here and they're on the To: line of every send
-//   BRIEFING_RECIPIENTS   comma-separated distribution list (Bcc'd). If empty, only the team receives it.
+//   BRIEFING_RECIPIENTS   optional extra distribution addresses (the main list is edited in the Compose panel
+//                         and stored in Netlify Blobs under "distro"). Each recipient gets their own copy.
 import { BRAND } from "./briefing.mts";
 
 const RESEND_URL = "https://api.resend.com/emails";
+const RESEND_BATCH_URL = "https://api.resend.com/emails/batch";
+const BATCH_SIZE = 100; // Resend batch limit
 const SITE_URL = (process.env.URL || "https://accbriefing.netlify.app").replace(/\/+$/, "");
 
+const EMAIL_RE = /^[^@\s<>(),;:"]+@[^@\s<>(),;:"]+\.[a-z]{2,}$/i;
 const list = (v: string | undefined) =>
-  (v || "").split(/[,;\s]+/).map((s) => s.trim()).filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s));
+  (v || "").split(/[,;\s]+/).map((s) => s.trim()).filter((s) => EMAIL_RE.test(s));
+
+// Parse pasted text ("a@x.com, b@y.org\nName <c@z.com>") into valid, lowercased, de-duplicated
+// addresses, plus whatever couldn't be read as an address.
+export function parseEmails(text: string) {
+  const valid: string[] = [], invalid: string[] = [];
+  for (const raw of String(text || "").split(/[,;\n\r\t ]+/)) {
+    const t = raw.trim().replace(/^<|>$/g, "").replace(/^mailto:/i, "");
+    if (!t) continue;
+    if (EMAIL_RE.test(t)) { const e = t.toLowerCase(); if (!valid.includes(e)) valid.push(e); }
+    else if (t.includes("@")) invalid.push(raw.trim());
+  }
+  return { valid, invalid };
+}
+
+// The distribution list: the site-managed list in Blobs plus any BRIEFING_RECIPIENTS, minus the team.
+export async function loadDistro(store: any): Promise<string[]> {
+  const saved: any = await store.get("distro", { type: "json" });
+  const s = emailSettings();
+  const team = s.team.map((a) => a.toLowerCase());
+  const all = [...(saved?.emails || []), ...s.distro].map((a: string) => a.toLowerCase());
+  return [...new Set(all)].filter((a) => !team.includes(a));
+}
 
 export function emailSettings() {
   const env = (k: string) => (globalThis as any).Netlify?.env?.get(k) ?? process.env[k];
@@ -49,30 +75,48 @@ function wrap(briefingHtml: string, banner?: string, note?: string) {
     + `<body style="margin:0;padding:24px 16px;background:#ffffff;">${warn}${top}${noteHtml(note)}${briefingHtml}${foot}</body></html>`;
 }
 
-export async function sendBriefingEmail(briefing: any, opts: { audience: "full" | "team"; banner?: string; subjectPrefix?: string; only?: string[]; note?: string; manual?: boolean }) {
-  const s = emailSettings();
-  if (!s.apiKey) throw new Error("RESEND_API_KEY is not set");
-  if (!s.team.length) throw new Error("BRIEFING_REPLY_TO is not set");
-  const bcc = opts.audience === "full" ? s.distro.filter((a) => !s.team.includes(a)) : [];
-  const subject = `${opts.subjectPrefix || ""}${briefing.subject}`;
-  const html = wrap(briefing.html, opts.banner, opts.note);
-  // `only` narrows a team send to a subset of the team (used for tests); replies then go to that subset too.
-  const team = opts.only?.length ? s.team.filter((a) => opts.only!.map((x) => x.toLowerCase()).includes(a.toLowerCase())) : s.team;
-  if (!team.length) throw new Error("None of the requested test recipients are on BRIEFING_REPLY_TO");
-  const body: any = { from: s.from, to: team, reply_to: team, subject, html, text: toText(html) };
-  if (bcc.length) body.bcc = bcc;
-  const res = await fetch(RESEND_URL, {
+async function resend(url: string, apiKey: string, payload: unknown, idemKey: string) {
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${s.apiKey}`,
-      "Content-Type": "application/json",
-      // Resend dedupes on this key for 24h, so a retried send can't double-deliver.
-      "Idempotency-Key": `acc-briefing-${briefing.date}-${opts.audience}-${briefing.generatedAt}-${team.join("+")}${opts.subjectPrefix === "[Test] " || opts.manual ? "-" + Date.now() : ""}`,
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(20_000),
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": idemKey },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(30_000),
   });
   const out = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`Resend ${res.status}: ${out?.message || out?.name || "send failed"}`);
-  return { id: out.id, to: team, bcc: bcc.length };
+  return out;
+}
+
+export async function sendBriefingEmail(briefing: any, opts: { audience: "full" | "team"; banner?: string; subjectPrefix?: string; only?: string[]; note?: string; manual?: boolean; distro?: string[] }) {
+  const s = emailSettings();
+  if (!s.apiKey) throw new Error("RESEND_API_KEY is not set");
+  if (!s.team.length) throw new Error("BRIEFING_REPLY_TO is not set");
+  const subject = `${opts.subjectPrefix || ""}${briefing.subject}`;
+  const html = wrap(briefing.html, opts.banner, opts.note);
+  const text = toText(html);
+  // `only` narrows a team send to a subset of the team (used for tests); replies then go to that subset too.
+  const team = opts.only?.length ? s.team.filter((a) => opts.only!.map((x) => x.toLowerCase()).includes(a.toLowerCase())) : s.team;
+  if (!team.length) throw new Error("None of the requested test recipients are on BRIEFING_REPLY_TO");
+  const teamLc = s.team.map((a) => a.toLowerCase());
+  const distro = opts.audience === "full" ? [...new Set((opts.distro ?? s.distro).map((a) => a.toLowerCase()))].filter((a) => !teamLc.includes(a)) : [];
+  // Resend dedupes on these keys for 24h, so a retried send can't double-deliver. Deliberate sends get a unique key.
+  const base = `acc-briefing-${briefing.date}-${opts.audience}-${briefing.generatedAt}${opts.subjectPrefix === "[Test] " || opts.manual ? "-" + Date.now() : ""}`;
+
+  // 1) The team's copy: all of them on To:, replies go to all of them.
+  const out = await resend(RESEND_URL, s.apiKey, { from: s.from, to: team, reply_to: team, subject, html, text }, `${base}-team-${team.join("+")}`);
+
+  // 2) Each distribution-list recipient gets their own copy (private, and no 50-recipient limit), in batches.
+  let delivered = 0;
+  const failures: string[] = [];
+  for (let i = 0; i < distro.length; i += BATCH_SIZE) {
+    const chunk = distro.slice(i, i + BATCH_SIZE);
+    try {
+      await resend(RESEND_BATCH_URL, s.apiKey, chunk.map((to) => ({ from: s.from, to: [to], reply_to: s.team, subject, html, text })), `${base}-distro-${i}`);
+      delivered += chunk.length;
+    } catch (e: any) {
+      failures.push(`batch ${i / BATCH_SIZE + 1} (${chunk.length}): ${e?.message || e}`);
+    }
+  }
+  if (failures.length && !delivered) throw new Error(`Team copy sent, but the distribution list failed: ${failures.join("; ")}`);
+  return { id: out.id, to: team, distro: delivered, ...(failures.length ? { failures } : {}) };
 }

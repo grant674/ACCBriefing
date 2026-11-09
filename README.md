@@ -42,7 +42,7 @@ Netlify environment variables (Site configuration → Environment variables, sco
 | `RESEND_API_KEY` | API key from resend.com → API Keys (sending access) |
 | `BRIEFING_FROM` | optional; default `Pacheco ACC Briefing <briefing@pachecoventuresaz.com>` |
 | `BRIEFING_REPLY_TO` | team addresses, comma-separated. Replies go to all of them; they're on the To: line. |
-| `BRIEFING_RECIPIENTS` | distribution list, comma-separated (sent as Bcc). Leave empty to send to the team only. |
+| `BRIEFING_RECIPIENTS` | optional extra distribution addresses; the main list is managed in the Compose panel |
 
 Resend setup: add and verify the domain `pachecoventuresaz.com` (Resend shows the SPF/DKIM DNS records to add).
 
@@ -53,6 +53,9 @@ Open the site with `#send` (e.g. https://accbriefing.netlify.app/#send) and ente
 - **Save for noon email**: the note rides on the next scheduled send, then clears itself.
 - **Send preview to team**: emails the latest briefing (with the note) to the team only.
 - **Send to everyone now**: emails it to the team + distribution list; the noon send won't resend that briefing.
+- **Distribution list**: paste addresses to add (commas/new lines; duplicates, team addresses and malformed
+  entries are skipped), remove with one click. Stored in Netlify Blobs (`distro`). Each recipient gets their
+  own copy via Resend's batch API (100 per batch), so nobody sees anyone else's address; replies go to the team.
 
 | Variable | Value |
 |---|---|

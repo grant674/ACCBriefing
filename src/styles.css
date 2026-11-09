@@ -63,6 +63,13 @@ button.copied { background: #e4efe6; border-color: #b9d4be; color: var(--ok); }
 .compose .row.wrap { flex-wrap: wrap; }
 .compose .spacer { flex: 1; }
 .compose .ok { margin: 0; color: var(--ok); } .compose .err { margin: 0; color: var(--bad); }
+.compose details.distro { border-top: 1px solid var(--rule); padding-top: 10px; display: grid; gap: 8px; }
+.compose details.distro[open] { display: grid; }
+.compose summary { cursor: pointer; font-weight: 500; }
+.compose .distro-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow: auto; border: 1px solid var(--rule); border-radius: 6px; background: #fff; }
+.compose .distro-list li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.compose .distro-list li:last-child { border-bottom: 0; }
+.compose .distro-list button { padding: 3px 10px; font-size: 12px; }
 @media print { .compose { display: none !important; } }
 
 /* PDF / print: just the briefing, on white, with sensible page breaks */

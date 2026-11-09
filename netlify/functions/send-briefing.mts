@@ -4,7 +4,7 @@
 import type { Config } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
 import { azDate } from "../lib/briefing.mts";
-import { sendBriefingEmail } from "../lib/email.mts";
+import { sendBriefingEmail, loadDistro } from "../lib/email.mts";
 
 export default async () => {
   const store = getStore({ name: "acc-briefing", consistency: "strong" });
@@ -35,7 +35,7 @@ export default async () => {
       });
       await store.setJSON(sentKey, { audience: "team", reason: "analysis failed", ...result, at: Date.now() });
     } else {
-      result = await sendBriefingEmail(briefing, { audience: "full", note });
+      result = await sendBriefingEmail(briefing, { audience: "full", note, distro: await loadDistro(store) });
       await store.setJSON(sentKey, { audience: "full", note: !!note, ...result, at: Date.now() });
       if (note) await store.delete("note/next");
     }
