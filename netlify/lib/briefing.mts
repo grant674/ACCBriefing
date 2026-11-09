@@ -127,7 +127,7 @@ export async function collectEvents(now: number) {
       const notes = (Array.isArray(r.Notes) ? r.Notes : [r.Notes]).map((n: unknown) => clean(htmlToText(String(n ?? "")))).filter((x: string) => !placeholder(x));
       const place = [clean(r.Location), clean(r.City)].filter((x) => !placeholder(x));
       e = { eventId: r.EventID, type: clean(r.EventType), subject: clean(r.Subject), start: Number(r.Start), end: Number(r.End),
-        location: place.join(", "), notes: notes.join(" "), hasNotice: !!clean(r.NoticeFileName),
+        location: place.join(", "), notes: clean(notes.join(" ").replace(/\(?\bsee notes?\b\)?\.?/gi, " ")), hasNotice: !!clean(r.NoticeFileName),
         dockets: [] as any[], companies: [] as string[] };
       byId.set(r.EventID, e);
     }
