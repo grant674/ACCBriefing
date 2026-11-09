@@ -98,12 +98,15 @@ export default function App() {
             </p>
           </div>
         </div>
-        {data?.dates?.length > 1 && (
-          <select value={date} onChange={(e) => setDate(e.target.value)} aria-label="Choose a briefing date">
-            <option value="">Latest</option>
-            {data.dates.map((d) => <option key={d} value={d}>{fmtDate(d)}</option>)}
-          </select>
-        )}
+        <div className="masthead-actions">
+          {!showCompose && <button className="linklike team-link" onClick={() => setShowCompose(true)}>Team</button>}
+          {data?.dates?.length > 1 && (
+            <select value={date} onChange={(e) => setDate(e.target.value)} aria-label="Choose a briefing date">
+              <option value="">Latest</option>
+              {data.dates.map((d) => <option key={d} value={d}>{fmtDate(d)}</option>)}
+            </select>
+          )}
+        </div>
       </header>
 
       {running && (
