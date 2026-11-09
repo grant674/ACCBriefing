@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import TestPanel from "./TestPanel.jsx";
+import ComposePanel from "./ComposePanel.jsx";
 
 const fmtWhen = (ms) =>
   new Intl.DateTimeFormat("en-US", { timeZone: "America/Phoenix", weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(ms));
@@ -11,6 +11,13 @@ const LOGO = "/pacheco-logo.png";
 
 export default function App() {
   const [logoOk, setLogoOk] = useState(true);
+  const isComposeHash = () => typeof window !== "undefined" && ["#send", "#compose", "#send-test"].includes(window.location.hash);
+  const [showCompose, setShowCompose] = useState(isComposeHash());
+  useEffect(() => {
+    const onHash = () => setShowCompose(isComposeHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const [data, setData] = useState(null);
   const [date, setDate] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -76,7 +83,7 @@ export default function App() {
 
   return (
     <div className="page">
-      {typeof window !== "undefined" && window.location.hash === "#send-test" && <TestPanel />}
+      {showCompose && <ComposePanel />}
       <header className="masthead">
         <div className="brand">
           {logoOk && <img className="brand-logo" src={LOGO} alt={BRAND} onError={() => setLogoOk(false)} />}

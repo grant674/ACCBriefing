@@ -14,6 +14,9 @@ export default async () => {
 
   const briefing: any = await store.get("latest", { type: "json" });
   const status: any = await store.get("status", { type: "json" });
+  // A note saved from the Compose panel rides on the next morning's email, then is cleared.
+  const saved: any = await store.get("note/next", { type: "json" });
+  const note: string = saved?.text || "";
   let result: any;
   try {
     if (!briefing || briefing.date !== today) {
@@ -27,13 +30,14 @@ export default async () => {
     } else if (briefing.errors?.analysis) {
       // Summaries failed: hold it for the team rather than sending raw records to clients.
       result = await sendBriefingEmail(briefing, {
-        audience: "team", subjectPrefix: "[Held for review] ",
+        audience: "team", subjectPrefix: "[Held for review] ", note,
         banner: "The plain-language summaries failed this morning, so this briefing was NOT sent to the distribution list. Regenerate it on the site and forward it if it looks right.",
       });
       await store.setJSON(sentKey, { audience: "team", reason: "analysis failed", ...result, at: Date.now() });
     } else {
-      result = await sendBriefingEmail(briefing, { audience: "full" });
-      await store.setJSON(sentKey, { audience: "full", ...result, at: Date.now() });
+      result = await sendBriefingEmail(briefing, { audience: "full", note });
+      await store.setJSON(sentKey, { audience: "full", note: !!note, ...result, at: Date.now() });
+      if (note) await store.delete("note/next");
     }
     console.log(`Briefing email sent for ${today}:`, JSON.stringify(result));
   } catch (e: any) {

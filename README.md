@@ -45,3 +45,15 @@ Netlify environment variables (Site configuration → Environment variables, sco
 | `BRIEFING_RECIPIENTS` | distribution list, comma-separated (sent as Bcc). Leave empty to send to the team only. |
 
 Resend setup: add and verify the domain `pachecoventuresaz.com` (Resend shows the SPF/DKIM DNS records to add).
+
+## Compose panel (notes and manual sends)
+Open the site with `#send` (e.g. https://accbriefing.netlify.app/#send) and enter the passcode
+(`BRIEFING_ADMIN_CODE` in Netlify). From there:
+- **Note**: text shown in a box above the briefing in the email.
+- **Save for 6:30 AM email**: the note rides on the next scheduled send, then clears itself.
+- **Send preview to team**: emails the latest briefing (with the note) to the team only.
+- **Send to everyone now**: emails it to the team + distribution list; the 6:30 job won't resend that briefing.
+
+| Variable | Value |
+|---|---|
+| `BRIEFING_ADMIN_CODE` | passcode for the Compose panel (secret) |
